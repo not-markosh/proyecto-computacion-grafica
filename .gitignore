@@ -401,4 +401,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Include models
-!ConfigInicial/Models/*.obj
+!RecorridoVirtual/Models/*.obj
