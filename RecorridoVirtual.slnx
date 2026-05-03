@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="RecorridoVirtual/RecorridoVirtual.vcxproj" Id="64691d2b-0eaa-42be-8a16-ec8d916d5c33" />
+</Solution>
