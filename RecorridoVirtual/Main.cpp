@@ -227,16 +227,8 @@ int main()
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
 	
 	
-	//models
-	Model DogBody((char*)"Models/DogBody.obj");
-	Model HeadDog((char*)"Models/HeadDog.obj");
-	Model DogTail((char*)"Models/TailDog.obj");
-	Model F_RightLeg((char*)"Models/F_RightLegDog.obj");
-	Model F_LeftLeg((char*)"Models/F_LeftLegDog.obj");
-	Model B_RightLeg((char*)"Models/B_RightLegDog.obj");
-	Model B_LeftLeg((char*)"Models/B_LeftLegDog.obj");
-	Model Piso((char*)"Models/piso.obj");
-	Model Ball((char*)"Models/ball.obj");
+	// Carga de modelos
+	Model Router((char*)"Models/Router/Router.obj");
 
 
 	//KeyFrames
@@ -376,64 +368,28 @@ int main()
         view = camera.GetViewMatrix();	
 		model = glm::mat4(1);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Piso.Draw(lightingShader);
+		Router.Draw(lightingShader);
 
-		model = glm::mat4(1);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-		//Body
-		modelTemp= model = glm::translate(model, glm::vec3(dogPosX,dogPosY,dogPosZ));
-		modelTemp= model = glm::rotate(model, glm::radians(rotDog), glm::vec3(0.0f, 1.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		DogBody.Draw(lightingShader);
-		//Head
-		model = modelTemp;
-		model = glm::translate(model, glm::vec3(0.0f, 0.093f, 0.208f));
-		model = glm::rotate(model, glm::radians(head), glm::vec3(0.0f, 0.0f, 1.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		HeadDog.Draw(lightingShader);
-		//Tail 
-		model = modelTemp;
-		model = glm::translate(model, glm::vec3(0.0f, 0.026f, -0.288f));
-		model = glm::rotate(model, glm::radians(tail), glm::vec3(0.0f, 0.0f, -1.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
-		DogTail.Draw(lightingShader);
-		//Front Left Leg
-		model = modelTemp;
-		model = glm::translate(model, glm::vec3(0.112f, -0.044f, 0.074f));
-		model = glm::rotate(model, glm::radians(FLegs), glm::vec3(-1.0f, 0.0f, 0.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		F_LeftLeg.Draw(lightingShader);
-		//Front Right Leg
-		model = modelTemp; 
-		model = glm::translate(model, glm::vec3(-0.111f, -0.055f, 0.074f));
-		model = glm::rotate(model, glm::radians(FLegs), glm::vec3(1.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		F_RightLeg.Draw(lightingShader);
-		//Back Left Leg
-		model = modelTemp; 
-		model = glm::translate(model, glm::vec3(0.082f, -0.046, -0.218)); 
-		model = glm::rotate(model, glm::radians(RLegs), glm::vec3(1.0f, 0.0f, 0.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
-		B_LeftLeg.Draw(lightingShader);
-		//Back Right Leg
-		model = modelTemp; 
-		model = glm::translate(model, glm::vec3(-0.083f, -0.057f, -0.231f));
-		model = glm::rotate(model, glm::radians(RLegs), glm::vec3(-1.0f, 0.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		B_RightLeg.Draw(lightingShader); 
+		//model = glm::mat4(1);
+		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		//glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+		////Body
+		//modelTemp= model = glm::translate(model, glm::vec3(dogPosX,dogPosY,dogPosZ));
+		//modelTemp= model = glm::rotate(model, glm::radians(rotDog), glm::vec3(0.0f, 1.0f, 0.0f));
+		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		//DogBody.Draw(lightingShader);
 
 
-		model = glm::mat4(1);
-		glEnable(GL_BLEND);//Avtiva la funcionalidad para trabajar el canal alfa
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 1);
-		model = glm::rotate(model, glm::radians(rotBall), glm::vec3(0.0f, 1.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	    Ball.Draw(lightingShader); 
-		glDisable(GL_BLEND);  //Desactiva el canal alfa 
-		glBindVertexArray(0);
+		//model = glm::mat4(1);
+		//glEnable(GL_BLEND);//Avtiva la funcionalidad para trabajar el canal alfa
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		//glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 1);
+		//model = glm::rotate(model, glm::radians(rotBall), glm::vec3(0.0f, 1.0f, 0.0f));
+		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	 //   Ball.Draw(lightingShader); 
+		//glDisable(GL_BLEND);  //Desactiva el canal alfa 
+		//glBindVertexArray(0);
 	
 
 		// Also draw the lamp object, again binding the appropriate shader
