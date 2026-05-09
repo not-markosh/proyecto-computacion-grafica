@@ -207,20 +207,31 @@ private:
 	}
 };
 
-GLint TextureFromFile(const char *path, string directory)
+GLint TextureFromFile(const char* path, string directory)
 {
-	//Generate texture ID and load texture data
+	// Generate texture ID and load texture data
 	string filename = string(path);
 	filename = directory + '/' + filename;
+
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 
 	int width, height;
 
-	unsigned char *image = SOIL_load_image(filename.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+	unsigned char* image = SOIL_load_image(filename.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
 
-	// Assign texture to ID
+	if (image == nullptr)
+	{
+		std::cout << "ERROR::TEXTURE::No se pudo cargar la textura: " << filename << std::endl;
+		std::cout << "SOIL error: " << SOIL_last_result() << std::endl;
+		return 0;
+	}
+
 	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// IMPORTANTE: evita errores con imagenes cuyo ancho no es multiplo de 4
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -229,8 +240,9 @@ GLint TextureFromFile(const char *path, string directory)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
+
 	SOIL_free_image_data(image);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return textureID;
 }

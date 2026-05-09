@@ -227,8 +227,10 @@ int main()
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
 	
 	
-	// Carga de modelos
+	// Models
 	Model Router((char*)"Models/Router/Router.obj");
+	Model Puente((char*)"Models/Puente/final_puente.obj");
+	Model Lampara((char*)"Models/Lampara/LamparaFI.obj");
 
 
 	//KeyFrames
@@ -367,6 +369,63 @@ int main()
 		//Carga de modelo 
         view = camera.GetViewMatrix();	
 		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Puente.Draw(lightingShader);
+
+		//Lampara 1
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+		//Lampara 2
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, 5.2f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+		//Lampara 3
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, -5.2f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+		//Lampara 4
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, 10.4f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+		//Lampara 5
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, -10.4f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+		//Lampara 6
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, 15.6f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+		//Lampara 7
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(3.0f, 3.0f, 3.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 4.1f, -15.6f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		Lampara.Draw(lightingShader);
+
+
+		model = glm::mat4(1);
+		model = glm::scale(model, glm::vec3(6.0f, 6.0f, 6.0f));
+		model = glm::translate(model, glm::vec3(-1.0f, 1.62f, 0.0f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		Router.Draw(lightingShader);
 
