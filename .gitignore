@@ -402,3 +402,7 @@ FodyWeavers.xsd
 
 # Include models
 !RecorridoVirtual/Models/*/*.obj
+
+# Include libraries
+!External Libraries/GLEW/lib/Release/Win32/glew32.lib
+!External Libraries/GLEW/lib/Release/Win32/glew32s.lib
