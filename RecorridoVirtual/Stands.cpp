@@ -88,16 +88,16 @@ const int NUM_STANDS = 8;
 // Posiciones de los stands
 glm::vec3 standPositions[NUM_STANDS] = {
 	// Lado izquierdo del puente
-	glm::vec3(-4.0f, -0.65f, 11.0f),
-	glm::vec3(-4.0f, -0.65f, 1.5f),
-	glm::vec3(-4.0f, -0.65f, -8.0f),
-	glm::vec3(-4.0f, -0.65f, -18.0f),
+	glm::vec3(-4.0f, -0.9f, 11.0f),
+	glm::vec3(-4.0f, -0.9f, 1.5f),
+	glm::vec3(-4.0f, -0.9f, -8.0f),
+	glm::vec3(-4.0f, -0.9f, -18.0f),
 
 	// Lado derecho del puente
-	glm::vec3(4.0f, -0.65f, 11.0f),
-	glm::vec3(4.0f, -0.65f, 1.5f),
-	glm::vec3(4.0f, -0.65f, -8.0f),
-	glm::vec3(4.0f, -0.65f, -18.0f)
+	glm::vec3(4.0f, -0.9f, 11.0f),
+	glm::vec3(4.0f, -0.9f, 1.5f),
+	glm::vec3(4.0f, -0.9f, -8.0f),
+	glm::vec3(4.0f, -0.9f, -18.0f)
 };
 
 // ===============================
@@ -293,11 +293,11 @@ int main()
 
 
 	//VBO, VAO, EBO
-	GLuint VAO,VBO, EBO;
+	GLuint VAO, VBO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
-	
+
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -335,7 +335,7 @@ int main()
 	faces.push_back("SkyBox/back.jpg");
 
 	GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
-	
+
 
 	// Projection matrix
 	glm::mat4 projection = glm::perspective(
@@ -537,7 +537,7 @@ int main()
 		// ===============================
 		for (int i = 0; i < NUM_STANDS; i++)
 		{
-			glm::vec3 finalScale = glm::vec3(1.0f, 1.0f, 1.0f) * standScale;
+			glm::vec3 finalScale = glm::vec3(0.5f, 0.5f, 0.5f) * standScale;
 
 			DrawModel(
 				Stand,
@@ -779,9 +779,9 @@ void InitPeopleFlow()
 
 		// Posición inicial sobre el eje Z del puente
 		if (peopleDir[i] == 1)
-			peoplePos[i] = glm::vec3(peopleLaneX[i], -0.65f, -22.0f - i * 2.0f);
+			peoplePos[i] = glm::vec3(peopleLaneX[i], -0.2f, -22.0f - i * 2.0f);
 		else
-			peoplePos[i] = glm::vec3(peopleLaneX[i], -0.65f, 16.0f + i * 2.0f);
+			peoplePos[i] = glm::vec3(peopleLaneX[i], -0.2f, 16.0f + i * 2.0f);
 
 		// Velocidades diferentes
 		peopleSpeed[i] = 1.0f + (i % 4) * 0.18f;
@@ -790,7 +790,7 @@ void InitPeopleFlow()
 		peopleWalkTime[i] = i * 0.35f;
 
 		// Escalas diferentes para dar variedad
-		peopleScale[i] = 0.75f + (i % 3) * 0.08f;
+		peopleScale[i] = 8.0f;
 	}
 }
 
