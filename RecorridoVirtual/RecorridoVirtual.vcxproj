@@ -19,9 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Stands.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
@@ -38,6 +35,9 @@
     <None Include="Shader\modelLoading.vs" />
     <None Include="Shader\SkyBox.frag" />
     <None Include="Shader\SkyBox.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Stands.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>

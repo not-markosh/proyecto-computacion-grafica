@@ -28,6 +28,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include <string>
+#include <vector>
 #include "Texture.h"
 
 
@@ -37,6 +38,25 @@ void MouseCallback(GLFWwindow* window, double xPos, double yPos);
 void DoMovement();
 void UpdateStandAnimation();
 void DrawModel(Model& modelObject, Shader shader, GLint modelLoc, glm::vec3 pos, glm::vec3 scale, float rotX, float rotY, float rotZ);
+void InitPeopleFlow();
+void UpdatePeopleFlow();
+
+void DrawPerson(
+	Model& torso,
+	Model& cabeza,
+	Model& brazoIzq,
+	Model& brazoDer,
+	Model& piernaIzq,
+	Model& piernaDer,
+	Model& pantorrillaIzq,
+	Model& pantorrillaDer,
+	Shader shader,
+	GLint modelLoc,
+	glm::vec3 pos,
+	glm::vec3 scale,
+	float rotY,
+	float walkAngle
+);
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
@@ -50,13 +70,13 @@ bool keys[1024];
 bool firstMouse = true;
 
 // ===============================
-// ANIMACIÓN DE STANDS
+// ANIMACIï¿½N DE STANDS
 // ===============================
 
-// Activador de la animación
+// Activador de la animaciï¿½n
 bool animStands = false;
 
-// Tiempo de la animación
+// Tiempo de la animaciï¿½n
 float standAnimTime = 0.0f;
 
 // Escala global animada de los stands
@@ -79,6 +99,21 @@ glm::vec3 standPositions[NUM_STANDS] = {
 	glm::vec3(4.0f, -0.65f, -8.0f),
 	glm::vec3(4.0f, -0.65f, -18.0f)
 };
+
+// ===============================
+// ANIMACIÃ“N 1: FLUJO INTELIGENTE DE PERSONAS
+// ===============================
+
+bool animPeople = false;
+
+const int NUM_PEOPLE = 10;
+
+glm::vec3 peoplePos[NUM_PEOPLE];
+float peopleSpeed[NUM_PEOPLE];
+int peopleDir[NUM_PEOPLE];
+float peopleLaneX[NUM_PEOPLE];
+float peopleWalkTime[NUM_PEOPLE];
+float peopleScale[NUM_PEOPLE];
 
 float vertices[] = {
 	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -124,7 +159,7 @@ float vertices[] = {
 	   -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 };
 
-// Rotación de cada stand para que miren hacia el pasillo central
+// Rotaciï¿½n de cada stand para que miren hacia el pasillo central
 float standRotations[NUM_STANDS] = {
 	-90.0f, -90.0f, -90.0f, -90.0f,
 	 90.0f,  90.0f,  90.0f,  90.0f
@@ -181,10 +216,22 @@ int main()
 	// Modelos principales
 	Model Puente((char*)"Models/Puente/final_puente.obj");
 	Model Stand((char*)"Models/Stands/stands.obj");
-	Model Camara((char*)"Models/Camara/cámara.obj");
+	Model Camara((char*)"Models/Camara/camara.obj");
 	Model Lampara((char*)"Models/Lampara/LamparaFI.obj");
 	Model Pumagua((char*)"Models/Pumagua/Pumagua.obj");
 	Model Router((char*)"Models/Router/Router.obj");
+	// Modelo humanoide dividido por partes
+	Model torso((char*)"Models/Persona/torso.obj");
+	Model cabeza((char*)"Models/Persona/cabeza.obj");
+	Model brazoIzq((char*)"Models/Persona/brazoIzq.obj");
+	Model brazoDer((char*)"Models/Persona/brazoDer.obj");
+	Model piernaIzq((char*)"Models/Persona/piernaIzq.obj");
+	Model piernaDer((char*)"Models/Persona/piernaDer.obj");
+	Model pantorrillaIzq((char*)"Models/Persona/pantorrillaIzq.obj");
+	Model pantorrillaDer((char*)"Models/Persona/pantorrillaDer.obj");
+	InitPeopleFlow();
+
+
 	GLfloat skyboxVertices[] = {
 		// Positions
 		-1.0f,  1.0f, -1.0f,
@@ -274,12 +321,12 @@ int main()
 	glGenBuffers(1, &skyboxVBO);
 	glBindVertexArray(skyboxVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 
 	//Load textures
-	vector <const GLchar*> faces;
+	std::vector<const GLchar*> faces;
 	faces.push_back("SkyBox/right.jpg");
 	faces.push_back("SkyBox/left.jpg");
 	faces.push_back("SkyBox/top.jpg");
@@ -288,7 +335,7 @@ int main()
 	faces.push_back("SkyBox/back.jpg");
 
 	GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
-
+	
 
 	// Projection matrix
 	glm::mat4 projection = glm::perspective(
@@ -310,6 +357,7 @@ int main()
 		glfwPollEvents();
 		DoMovement();
 		UpdateStandAnimation();
+		UpdatePeopleFlow();
 
 		// Clear
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -328,14 +376,14 @@ int main()
 		);
 
 		// ===============================
-		// ÚNICA LUZ: LUZ DIRECCIONAL TIPO SOL
+		// ï¿½NICA LUZ: LUZ DIRECCIONAL TIPO SOL
 		// ===============================
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.3f, -1.0f, -0.4f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.45f, 0.45f, 0.45f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.75f, 0.75f, 0.75f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.25f, 0.25f, 0.25f);
 
-		// Desactivar point lights si tu shader todavía las tiene declaradas
+		// Desactivar point lights si tu shader todavï¿½a las tiene declaradas
 		for (int i = 0; i < 4; i++)
 		{
 			std::string base = "pointLights[" + std::to_string(i) + "]";
@@ -350,7 +398,7 @@ int main()
 			glUniform1f(glGetUniformLocation(lightingShader.Program, (base + ".quadratic").c_str()), 0.0f);
 		}
 
-		// Desactivar spotlight si tu shader todavía lo tiene declarado
+		// Desactivar spotlight si tu shader todavï¿½a lo tiene declarado
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), 0.0f, 0.0f, 0.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), 0.0f, 0.0f, -1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
@@ -392,7 +440,7 @@ int main()
 		// MODELOS DECORATIVOS
 		// ===============================
 
-// Cámaras de seguridad
+// Cï¿½maras de seguridad
 		DrawModel(
 			Camara,
 			lightingShader,
@@ -415,7 +463,7 @@ int main()
 			0.0f
 		);
 
-		// Lámparas
+		// Lï¿½mparas
 		DrawModel(
 			Lampara,
 			lightingShader,
@@ -460,7 +508,7 @@ int main()
 			0.0f
 		);
 
-		// Estación Pumagua
+		// Estaciï¿½n Pumagua
 		DrawModel(
 			Pumagua,
 			lightingShader,
@@ -503,6 +551,39 @@ int main()
 			);
 
 		}
+		// ===============================
+		// DIBUJAR FLUJO INTELIGENTE DE PERSONAS
+		// ===============================
+		if (animPeople)
+		{
+			for (int i = 0; i < NUM_PEOPLE; i++)
+			{
+				float rotY = (peopleDir[i] == 1) ? 0.0f : 180.0f;
+				float walkAngle = sin(peopleWalkTime[i] * 6.0f) * 25.0f;
+
+				DrawPerson(
+					torso,
+					cabeza,
+					brazoIzq,
+					brazoDer,
+					piernaIzq,
+					piernaDer,
+					pantorrillaIzq,
+					pantorrillaDer,
+					lightingShader,
+					modelLoc,
+					peoplePos[i],
+					glm::vec3(peopleScale[i], peopleScale[i], peopleScale[i]),
+					rotY,
+					walkAngle
+				);
+			}
+		}
+
+
+
+
+
 		//Draw skybox last
 		glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
 		skyboxShader.Use();
@@ -512,7 +593,6 @@ int main()
 		// skybox cube
 		glBindVertexArray(skyboxVAO);
 		glActiveTexture(GL_TEXTURE1);
-
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
@@ -534,7 +614,7 @@ int main()
 }
 
 // ===============================
-// MOVIMIENTO DE CÁMARA
+// MOVIMIENTO DE Cï¿½MARA
 // ===============================
 void DoMovement()
 {
@@ -581,15 +661,19 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		}
 	}
 
-	// Tecla 1: activa o desactiva la animación de los stands
+	// Tecla 1: activa o desactiva la animaciï¿½n de los stands
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
 		animStands = !animStands;
 	}
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+	{
+		animPeople = !animPeople;
+	}
 }
 
 // ===============================
-// ANIMACIÓN DE STANDS CON KEYFRAMES
+// ANIMACIï¿½N DE STANDS CON KEYFRAMES
 // ===============================
 void UpdateStandAnimation()
 {
@@ -609,8 +693,8 @@ void UpdateStandAnimation()
 	}
 
 	// KeyFrames:
-	// KF0 = 0.0s -> Puente vacío, scale = 0.0
-	// KF1 = 1.0s -> Aparición inicial, scale = 0.3
+	// KF0 = 0.0s -> Puente vacï¿½o, scale = 0.0
+	// KF1 = 1.0s -> Apariciï¿½n inicial, scale = 0.3
 	// KF2 = 2.0s -> Crecimiento, scale = 0.6
 	// KF3 = 3.5s -> Posicionamiento, scale = 0.9
 	// KF4 = 5.0s -> Estado final, scale = 1.0
@@ -642,13 +726,13 @@ void DrawModel(Model& modelObject, Shader shader, GLint modelLoc, glm::vec3 pos,
 
 	model = glm::translate(model, pos);
 
-	// Rotación en X: inclinar hacia arriba o hacia abajo
+	// Rotaciï¿½n en X: inclinar hacia arriba o hacia abajo
 	model = glm::rotate(model, glm::radians(rotX), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	// Rotación en Y: girar izquierda/derecha
+	// Rotaciï¿½n en Y: girar izquierda/derecha
 	model = glm::rotate(model, glm::radians(rotY), glm::vec3(0.0f, 1.0f, 0.0f));
 
-	// Rotación en Z: ladear el modelo
+	// Rotaciï¿½n en Z: ladear el modelo
 	model = glm::rotate(model, glm::radians(rotZ), glm::vec3(0.0f, 0.0f, 1.0f));
 
 	model = glm::scale(model, scale);
@@ -676,4 +760,183 @@ void MouseCallback(GLFWwindow* window, double xPos, double yPos)
 	lastY = yPos;
 
 	camera.ProcessMouseMovement(xOffset, yOffset);
+}
+
+void InitPeopleFlow()
+{
+	for (int i = 0; i < NUM_PEOPLE; i++)
+	{
+		// Personas caminando en ambos sentidos
+		peopleDir[i] = (i % 2 == 0) ? 1 : -1;
+
+		// Carriles dentro del pasillo central
+		if (i % 3 == 0)
+			peopleLaneX[i] = -0.75f;
+		else if (i % 3 == 1)
+			peopleLaneX[i] = 0.0f;
+		else
+			peopleLaneX[i] = 0.75f;
+
+		// PosiciÃ³n inicial sobre el eje Z del puente
+		if (peopleDir[i] == 1)
+			peoplePos[i] = glm::vec3(peopleLaneX[i], -0.65f, -22.0f - i * 2.0f);
+		else
+			peoplePos[i] = glm::vec3(peopleLaneX[i], -0.65f, 16.0f + i * 2.0f);
+
+		// Velocidades diferentes
+		peopleSpeed[i] = 1.0f + (i % 4) * 0.18f;
+
+		// Desfase para que no caminen igual
+		peopleWalkTime[i] = i * 0.35f;
+
+		// Escalas diferentes para dar variedad
+		peopleScale[i] = 0.75f + (i % 3) * 0.08f;
+	}
+}
+
+void UpdatePeopleFlow()
+{
+	if (!animPeople)
+		return;
+
+	for (int i = 0; i < NUM_PEOPLE; i++)
+	{
+		// Movimiento principal sobre el eje longitudinal del puente
+		peoplePos[i].z += peopleDir[i] * peopleSpeed[i] * deltaTime;
+
+		// Tiempo interno para simular caminata con seno
+		peopleWalkTime[i] += deltaTime;
+
+		// Evitar choques bÃ¡sicos entre personas
+		for (int j = 0; j < NUM_PEOPLE; j++)
+		{
+			if (i == j)
+				continue;
+
+			float distance = glm::distance(peoplePos[i], peoplePos[j]);
+
+			if (distance < 0.9f)
+			{
+				if (peoplePos[i].x <= peoplePos[j].x)
+					peoplePos[i].x -= 0.7f * deltaTime;
+				else
+					peoplePos[i].x += 0.7f * deltaTime;
+			}
+		}
+
+		// Regresar suavemente a su carril original
+		peoplePos[i].x += (peopleLaneX[i] - peoplePos[i].x) * 0.04f;
+
+		// Limitar al pasillo central para no invadir stands
+		if (peoplePos[i].x > 1.2f)
+			peoplePos[i].x = 1.2f;
+
+		if (peoplePos[i].x < -1.2f)
+			peoplePos[i].x = -1.2f;
+
+		// Reiniciar cuando salen del puente
+		if (peopleDir[i] == 1 && peoplePos[i].z > 18.0f)
+			peoplePos[i].z = -22.0f;
+
+		if (peopleDir[i] == -1 && peoplePos[i].z < -22.0f)
+			peoplePos[i].z = 18.0f;
+	}
+}
+void DrawPerson(
+	Model& torso,
+	Model& cabeza,
+	Model& brazoIzq,
+	Model& brazoDer,
+	Model& piernaIzq,
+	Model& piernaDer,
+	Model& pantorrillaIzq,
+	Model& pantorrillaDer,
+	Shader shader,
+	GLint modelLoc,
+	glm::vec3 pos,
+	glm::vec3 scale,
+	float rotY,
+	float walkAngle
+)
+{
+	glm::mat4 model = glm::mat4(1.0f);
+	glm::mat4 modelTemp = glm::mat4(1.0f);
+
+	float angCabeza = sin(walkAngle * 0.05f) * 4.0f;
+
+	float angBrazoIzq = walkAngle;
+	float angBrazoDer = -walkAngle;
+
+	float angMusloIzq = -walkAngle;
+	float angMusloDer = walkAngle;
+
+	float angPantorrillaIzq = fabs(walkAngle) * 0.45f;
+	float angPantorrillaDer = fabs(walkAngle) * 0.45f;
+
+	// TransformaciÃ³n base de la persona
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, pos);
+	model = glm::rotate(model, glm::radians(rotY), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, scale);
+
+	modelTemp = model;
+
+	// TORSO
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	torso.Draw(shader);
+
+	// CABEZA
+	model = modelTemp;
+	model = glm::translate(model, glm::vec3(0.0f, 0.0725f, 0.0f));
+	model = glm::rotate(model, glm::radians(angCabeza), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	cabeza.Draw(shader);
+
+	// BRAZO IZQUIERDO
+	model = modelTemp;
+	model = glm::translate(model, glm::vec3(0.0187f, 0.0591f, 0.0f));
+	model = glm::rotate(model, glm::radians(angBrazoIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	brazoIzq.Draw(shader);
+
+	// BRAZO DERECHO
+	model = modelTemp;
+	model = glm::translate(model, glm::vec3(-0.0179f, 0.0594f, 0.0f));
+	model = glm::rotate(model, glm::radians(angBrazoDer), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	brazoDer.Draw(shader);
+
+	// MUSLO IZQUIERDO
+	model = modelTemp;
+	model = glm::translate(model, glm::vec3(0.0103f, 0.0029f, 0.0f));
+	model = glm::rotate(model, glm::radians(angMusloIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	glm::mat4 matMusloIzq = model;
+
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	piernaIzq.Draw(shader);
+
+	// PANTORRILLA IZQUIERDA
+	model = matMusloIzq;
+	model = glm::translate(model, glm::vec3(0.0068f, -0.0384f, 0.0f));
+	model = glm::rotate(model, glm::radians(angPantorrillaIzq), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	pantorrillaIzq.Draw(shader);
+
+	// MUSLO DERECHO
+	model = modelTemp;
+	model = glm::translate(model, glm::vec3(-0.0073f, 0.0068f, 0.0f));
+	model = glm::rotate(model, glm::radians(angMusloDer), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	glm::mat4 matMusloDer = model;
+
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	piernaDer.Draw(shader);
+
+	// PANTORRILLA DERECHA
+	model = matMusloDer;
+	model = glm::translate(model, glm::vec3(-0.0097f, -0.0438f, 0.0f));
+	model = glm::rotate(model, glm::radians(angPantorrillaDer), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	pantorrillaDer.Draw(shader);
 }
