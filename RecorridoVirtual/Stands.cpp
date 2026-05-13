@@ -114,6 +114,7 @@ int peopleDir[NUM_PEOPLE];
 float peopleLaneX[NUM_PEOPLE];
 float peopleWalkTime[NUM_PEOPLE];
 float peopleScale[NUM_PEOPLE];
+int peopleModelType[NUM_PEOPLE]; // 0 para obj y 1 para fbx 
 
 float vertices[] = {
 	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -229,6 +230,7 @@ int main()
 	Model piernaDer((char*)"Models/Persona/piernaDer.obj");
 	Model pantorrillaIzq((char*)"Models/Persona/pantorrillaIzq.obj");
 	Model pantorrillaDer((char*)"Models/Persona/pantorrillaDer.obj");
+	
 	InitPeopleFlow();
 
 
@@ -327,12 +329,12 @@ int main()
 
 	//Load textures
 	std::vector<const GLchar*> faces;
-	faces.push_back("SkyBox/right.jpg");
-	faces.push_back("SkyBox/left.jpg");
-	faces.push_back("SkyBox/top.jpg");
-	faces.push_back("SkyBox/bottom.jpg");
-	faces.push_back("SkyBox/front.jpg");
-	faces.push_back("SkyBox/back.jpg");
+	faces.push_back("SkyBox/right.png");
+	faces.push_back("SkyBox/left.png");
+	faces.push_back("SkyBox/top.png");
+	faces.push_back("SkyBox/bottom.png");
+	faces.push_back("SkyBox/front.png");
+	faces.push_back("SkyBox/back.png");
 
 	GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
 
@@ -579,10 +581,7 @@ int main()
 				);
 			}
 		}
-
-
-
-
+		
 
 		//Draw skybox last
 		glDepthFunc(GL_LEQUAL);  // Change depth function so depth test passes when values are equal to depth buffer's content
@@ -791,6 +790,9 @@ void InitPeopleFlow()
 
 		// Escalas diferentes para dar variedad
 		peopleScale[i] = 8.0f;
+
+		// Tipo de modelo para cada persona (0 para obj y 1 para fbx)
+		peopleModelType[i] = (i % 2 == 0) ? 0 : 1;
 	}
 }
 
