@@ -83,7 +83,7 @@ float paredIzqX = 0.0f, paredIzqY = 0.0f, paredIzqZ = 0.0f, paredIzqScale = 1.0f
 float sillaX = 0.0f, sillaY = 0.0f, sillaZ = 0.0f, sillaScale = 1.0f;
 
 #define MAX_FRAMES 50
-int i_max_steps = 190;
+int i_max_steps = 5000;
 int i_curr_steps = 0;
 int FrameIndex = 0;
 bool playAnimStand = false;
