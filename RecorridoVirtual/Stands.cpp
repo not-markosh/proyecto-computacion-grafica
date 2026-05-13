@@ -338,14 +338,14 @@ int main()
 	Model Puente((char*)"Models/Puente/final_puente.obj");
 
 	//Modelos de la estructura de los stands dividido por partes
-	Model ModEstructuraDer((char*)"Models/estructuraDer.obj");
-	Model ModEstructuraFondo((char*)"Models/estructuraFondo.obj");
-	Model ModEstructuraIzq((char*)"Models/estructuraIzq.obj");
-	Model ModMesa((char*)"Models/Mesa.obj");
-	Model ModParedDer((char*)"Models/paredDer.obj");
-	Model ModParedFondo((char*)"Models/paredFondo.obj");
-	Model ModParedIzq((char*)"Models/paredIzq.obj");
-	Model ModSilla((char*)"Models/Silla.obj");
+	Model ModEstructuraDer((char*)"Models/Stands/estructuraDer.obj");
+	Model ModEstructuraFondo((char*)"Models/Stands/estructuraFondo.obj");
+	Model ModEstructuraIzq((char*)"Models/Stands/estructuraIzq.obj");
+	Model ModMesa((char*)"Models/Stands/Mesa.obj");
+	Model ModParedDer((char*)"Models/Stands/paredDer.obj");
+	Model ModParedFondo((char*)"Models/Stands/paredFondo.obj");
+	Model ModParedIzq((char*)"Models/Stands/paredIzq.obj");
+	Model ModSilla((char*)"Models/Stands/Silla.obj");
 	
 	Model Camara((char*)"Models/Camara/camara.obj");
 	Model Lampara((char*)"Models/Lampara/LamparaFI.obj");
