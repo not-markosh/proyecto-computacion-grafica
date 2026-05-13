@@ -898,6 +898,10 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 	
 	
 }
+
+void CheckProximityTriggers() {
+}
+
 void Animation() {
 
 	if (play)

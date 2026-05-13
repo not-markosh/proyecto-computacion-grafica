@@ -113,6 +113,16 @@ FRAME KeyFrame[MAX_FRAMES];
 // Cantidad de stands
 const int NUM_STANDS = 8;
 
+const float STAND_TRIGGER_RADIUS = 4.0f;   // Radio de activación
+const float STAND_MIN_SCALE = 1.0f;        // Escala normal
+const float STAND_MAX_SCALE = 1.5f;        // Escala expandida
+const float STAND_SCALE_SPEED = 1.5f;      // Velocidad de animación (unidades/seg)
+
+// Escala actual de cada stand (se interpola hacia MIN o MAX)
+float standProximityScale[NUM_STANDS];
+// true si la cámara está dentro del radio de ese stand
+bool standCameraInside[NUM_STANDS];
+
 // Posiciones de los stands
 glm::vec3 standPositions[NUM_STANDS] = {
 	// Lado izquierdo del puente
@@ -286,9 +296,51 @@ void UpdateStandKeyframes() {
 }
 
 
+void InitStandProximity()
+{
+	for (int i = 0; i < NUM_STANDS; i++)
+	{
+		standProximityScale[i] = STAND_MIN_SCALE;
+		standCameraInside[i] = false;
+	}
+}
+
+
 // DeltaTime
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
+
+void UpdateStandProximity()
+{
+	glm::vec3 camPos = camera.GetPosition();
+
+	for (int i = 0; i < NUM_STANDS; i++)
+	{
+		// Distancia horizontal (XZ) entre cámara y el stand
+		float dx = camPos.x - standPositions[i].x;
+		float dz = camPos.z - standPositions[i].z;
+		float distance = sqrt(dx * dx + dz * dz);
+
+		// ¿La cámara está dentro del radio de este stand?
+		standCameraInside[i] = (distance < STAND_TRIGGER_RADIUS);
+
+		// Interpolar la escala hacia el objetivo correspondiente
+		float target = standCameraInside[i] ? STAND_MAX_SCALE : STAND_MIN_SCALE;
+
+		if (standProximityScale[i] < target)
+		{
+			standProximityScale[i] += STAND_SCALE_SPEED * deltaTime;
+			if (standProximityScale[i] > target)
+				standProximityScale[i] = target;
+		}
+		else if (standProximityScale[i] > target)
+		{
+			standProximityScale[i] -= STAND_SCALE_SPEED * deltaTime;
+			if (standProximityScale[i] < target)
+				standProximityScale[i] = target;
+		}
+	}
+}
 
 int main()
 {
@@ -363,6 +415,8 @@ int main()
 	
 	loadFromFile();
 	InitPeopleFlow();
+
+	InitStandProximity();
 
 
 	GLfloat skyboxVertices[] = {
@@ -491,6 +545,8 @@ int main()
 		DoMovement();
 		UpdateStandKeyframes();
 		UpdatePeopleFlow();
+
+		UpdateStandProximity();
 
 		// Clear
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -674,7 +730,9 @@ int main()
 			glm::mat4 baseModel = glm::mat4(1.0f);
 			baseModel = glm::translate(baseModel, standPositions[i]);
 			baseModel = glm::rotate(baseModel, glm::radians(standRotations[i]), glm::vec3(0.0f, 1.0f, 0.0f));
-			baseModel = glm::scale(baseModel, glm::vec3(0.5f, 0.5f, 0.5f)); 
+			
+			float proxScale = standProximityScale[i];
+			baseModel = glm::scale(baseModel, glm::vec3(0.5f * proxScale, 0.5f * proxScale, 0.5f * proxScale));
 
 			glm::mat4 partModel;
 
