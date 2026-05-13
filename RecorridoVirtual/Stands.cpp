@@ -3,6 +3,7 @@
 // 29 de Abril de 2026
 // 320015764
 
+#include <fstream>
 #include <iostream>
 #include <cmath>
 
@@ -70,17 +71,44 @@ bool keys[1024];
 bool firstMouse = true;
 
 // ===============================
-// ANIMACI�N DE STANDS
+// ANIMACIÓN DE STANDS (KEYFRAMES)
 // ===============================
+float estDerX = 0.0f, estDerY = 0.0f, estDerZ = 0.0f, estDerScale = 1.0f;
+float estFondoX = 0.0f, estFondoY = 0.0f, estFondoZ = 0.0f, estFondoScale = 1.0f;
+float estIzqX = 0.0f, estIzqY = 0.0f, estIzqZ = 0.0f, estIzqScale = 1.0f;
+float mesaX = 0.0f, mesaY = 0.0f, mesaZ = 0.0f, mesaScale = 1.0f;
+float paredDerX = 0.0f, paredDerY = 0.0f, paredDerZ = 0.0f, paredDerScale = 1.0f;
+float paredFondoX = 0.0f, paredFondoY = 0.0f, paredFondoZ = 0.0f, paredFondoScale = 1.0f;
+float paredIzqX = 0.0f, paredIzqY = 0.0f, paredIzqZ = 0.0f, paredIzqScale = 1.0f;
+float sillaX = 0.0f, sillaY = 0.0f, sillaZ = 0.0f, sillaScale = 1.0f;
 
-// Activador de la animaci�n
-bool animStands = false;
+#define MAX_FRAMES 50
+int i_max_steps = 190;
+int i_curr_steps = 0;
+int FrameIndex = 0;
+bool playAnimStand = false;
+int playIndex = 0;
 
-// Tiempo de la animaci�n
-float standAnimTime = 0.0f;
+typedef struct _frame {
+	float estDerX, estDerY, estDerZ, estDerScale;
+	float incEstDerX, incEstDerY, incEstDerZ, incEstDerScale;
+	float estFondoX, estFondoY, estFondoZ, estFondoScale;
+	float incEstFondoX, incEstFondoY, incEstFondoZ, incEstFondoScale;
+	float estIzqX, estIzqY, estIzqZ, estIzqScale;
+	float incEstIzqX, incEstIzqY, incEstIzqZ, incEstIzqScale;
+	float mesaX, mesaY, mesaZ, mesaScale;
+	float incMesaX, incMesaY, incMesaZ, incMesaScale;
+	float paredDerX, paredDerY, paredDerZ, paredDerScale;
+	float incParedDerX, incParedDerY, incParedDerZ, incParedDerScale;
+	float paredFondoX, paredFondoY, paredFondoZ, paredFondoScale;
+	float incParedFondoX, incParedFondoY, incParedFondoZ, incParedFondoScale;
+	float paredIzqX, paredIzqY, paredIzqZ, paredIzqScale;
+	float incParedIzqX, incParedIzqY, incParedIzqZ, incParedIzqScale;
+	float sillaX, sillaY, sillaZ, sillaScale;
+	float incSillaX, incSillaY, incSillaZ, incSillaScale;
+} FRAME;
 
-// Escala global animada de los stands
-float standScale = 0.0f;
+FRAME KeyFrame[MAX_FRAMES];
 
 // Cantidad de stands
 const int NUM_STANDS = 8;
@@ -166,6 +194,98 @@ float standRotations[NUM_STANDS] = {
 	 90.0f,  90.0f,  90.0f,  90.0f
 };
 
+
+void resetElements(void) {
+	estDerX = KeyFrame[0].estDerX; estDerY = KeyFrame[0].estDerY; estDerZ = KeyFrame[0].estDerZ; estDerScale = KeyFrame[0].estDerScale;
+	estFondoX = KeyFrame[0].estFondoX; estFondoY = KeyFrame[0].estFondoY; estFondoZ = KeyFrame[0].estFondoZ; estFondoScale = KeyFrame[0].estFondoScale;
+	estIzqX = KeyFrame[0].estIzqX; estIzqY = KeyFrame[0].estIzqY; estIzqZ = KeyFrame[0].estIzqZ; estIzqScale = KeyFrame[0].estIzqScale;
+	mesaX = KeyFrame[0].mesaX; mesaY = KeyFrame[0].mesaY; mesaZ = KeyFrame[0].mesaZ; mesaScale = KeyFrame[0].mesaScale;
+	paredDerX = KeyFrame[0].paredDerX; paredDerY = KeyFrame[0].paredDerY; paredDerZ = KeyFrame[0].paredDerZ; paredDerScale = KeyFrame[0].paredDerScale;
+	paredFondoX = KeyFrame[0].paredFondoX; paredFondoY = KeyFrame[0].paredFondoY; paredFondoZ = KeyFrame[0].paredFondoZ; paredFondoScale = KeyFrame[0].paredFondoScale;
+	paredIzqX = KeyFrame[0].paredIzqX; paredIzqY = KeyFrame[0].paredIzqY; paredIzqZ = KeyFrame[0].paredIzqZ; paredIzqScale = KeyFrame[0].paredIzqScale;
+	sillaX = KeyFrame[0].sillaX; sillaY = KeyFrame[0].sillaY; sillaZ = KeyFrame[0].sillaZ; sillaScale = KeyFrame[0].sillaScale;
+}
+
+void interpolation(void) {
+	KeyFrame[playIndex].incEstDerX = (KeyFrame[playIndex + 1].estDerX - KeyFrame[playIndex].estDerX) / i_max_steps;
+	KeyFrame[playIndex].incEstDerY = (KeyFrame[playIndex + 1].estDerY - KeyFrame[playIndex].estDerY) / i_max_steps;
+	KeyFrame[playIndex].incEstDerZ = (KeyFrame[playIndex + 1].estDerZ - KeyFrame[playIndex].estDerZ) / i_max_steps;
+	KeyFrame[playIndex].incEstDerScale = (KeyFrame[playIndex + 1].estDerScale - KeyFrame[playIndex].estDerScale) / i_max_steps;
+	KeyFrame[playIndex].incEstFondoX = (KeyFrame[playIndex + 1].estFondoX - KeyFrame[playIndex].estFondoX) / i_max_steps;
+	KeyFrame[playIndex].incEstFondoY = (KeyFrame[playIndex + 1].estFondoY - KeyFrame[playIndex].estFondoY) / i_max_steps;
+	KeyFrame[playIndex].incEstFondoZ = (KeyFrame[playIndex + 1].estFondoZ - KeyFrame[playIndex].estFondoZ) / i_max_steps;
+	KeyFrame[playIndex].incEstFondoScale = (KeyFrame[playIndex + 1].estFondoScale - KeyFrame[playIndex].estFondoScale) / i_max_steps;
+	KeyFrame[playIndex].incEstIzqX = (KeyFrame[playIndex + 1].estIzqX - KeyFrame[playIndex].estIzqX) / i_max_steps;
+	KeyFrame[playIndex].incEstIzqY = (KeyFrame[playIndex + 1].estIzqY - KeyFrame[playIndex].estIzqY) / i_max_steps;
+	KeyFrame[playIndex].incEstIzqZ = (KeyFrame[playIndex + 1].estIzqZ - KeyFrame[playIndex].estIzqZ) / i_max_steps;
+	KeyFrame[playIndex].incEstIzqScale = (KeyFrame[playIndex + 1].estIzqScale - KeyFrame[playIndex].estIzqScale) / i_max_steps;
+	KeyFrame[playIndex].incMesaX = (KeyFrame[playIndex + 1].mesaX - KeyFrame[playIndex].mesaX) / i_max_steps;
+	KeyFrame[playIndex].incMesaY = (KeyFrame[playIndex + 1].mesaY - KeyFrame[playIndex].mesaY) / i_max_steps;
+	KeyFrame[playIndex].incMesaZ = (KeyFrame[playIndex + 1].mesaZ - KeyFrame[playIndex].mesaZ) / i_max_steps;
+	KeyFrame[playIndex].incMesaScale = (KeyFrame[playIndex + 1].mesaScale - KeyFrame[playIndex].mesaScale) / i_max_steps;
+	KeyFrame[playIndex].incParedDerX = (KeyFrame[playIndex + 1].paredDerX - KeyFrame[playIndex].paredDerX) / i_max_steps;
+	KeyFrame[playIndex].incParedDerY = (KeyFrame[playIndex + 1].paredDerY - KeyFrame[playIndex].paredDerY) / i_max_steps;
+	KeyFrame[playIndex].incParedDerZ = (KeyFrame[playIndex + 1].paredDerZ - KeyFrame[playIndex].paredDerZ) / i_max_steps;
+	KeyFrame[playIndex].incParedDerScale = (KeyFrame[playIndex + 1].paredDerScale - KeyFrame[playIndex].paredDerScale) / i_max_steps;
+	KeyFrame[playIndex].incParedFondoX = (KeyFrame[playIndex + 1].paredFondoX - KeyFrame[playIndex].paredFondoX) / i_max_steps;
+	KeyFrame[playIndex].incParedFondoY = (KeyFrame[playIndex + 1].paredFondoY - KeyFrame[playIndex].paredFondoY) / i_max_steps;
+	KeyFrame[playIndex].incParedFondoZ = (KeyFrame[playIndex + 1].paredFondoZ - KeyFrame[playIndex].paredFondoZ) / i_max_steps;
+	KeyFrame[playIndex].incParedFondoScale = (KeyFrame[playIndex + 1].paredFondoScale - KeyFrame[playIndex].paredFondoScale) / i_max_steps;
+	KeyFrame[playIndex].incParedIzqX = (KeyFrame[playIndex + 1].paredIzqX - KeyFrame[playIndex].paredIzqX) / i_max_steps;
+	KeyFrame[playIndex].incParedIzqY = (KeyFrame[playIndex + 1].paredIzqY - KeyFrame[playIndex].paredIzqY) / i_max_steps;
+	KeyFrame[playIndex].incParedIzqZ = (KeyFrame[playIndex + 1].paredIzqZ - KeyFrame[playIndex].paredIzqZ) / i_max_steps;
+	KeyFrame[playIndex].incParedIzqScale = (KeyFrame[playIndex + 1].paredIzqScale - KeyFrame[playIndex].paredIzqScale) / i_max_steps;
+	KeyFrame[playIndex].incSillaX = (KeyFrame[playIndex + 1].sillaX - KeyFrame[playIndex].sillaX) / i_max_steps;
+	KeyFrame[playIndex].incSillaY = (KeyFrame[playIndex + 1].sillaY - KeyFrame[playIndex].sillaY) / i_max_steps;
+	KeyFrame[playIndex].incSillaZ = (KeyFrame[playIndex + 1].sillaZ - KeyFrame[playIndex].sillaZ) / i_max_steps;
+	KeyFrame[playIndex].incSillaScale = (KeyFrame[playIndex + 1].sillaScale - KeyFrame[playIndex].sillaScale) / i_max_steps;
+}
+
+void loadFromFile() {
+	std::ifstream file("animacion_stand.txt");
+	if (file.is_open()) {
+		file >> FrameIndex;
+		for (int i = 0; i < FrameIndex; i++) {
+			file >> KeyFrame[i].estDerX >> KeyFrame[i].estDerY >> KeyFrame[i].estDerZ >> KeyFrame[i].estDerScale
+				 >> KeyFrame[i].estFondoX >> KeyFrame[i].estFondoY >> KeyFrame[i].estFondoZ >> KeyFrame[i].estFondoScale
+				 >> KeyFrame[i].estIzqX >> KeyFrame[i].estIzqY >> KeyFrame[i].estIzqZ >> KeyFrame[i].estIzqScale
+				 >> KeyFrame[i].mesaX >> KeyFrame[i].mesaY >> KeyFrame[i].mesaZ >> KeyFrame[i].mesaScale
+				 >> KeyFrame[i].paredDerX >> KeyFrame[i].paredDerY >> KeyFrame[i].paredDerZ >> KeyFrame[i].paredDerScale
+				 >> KeyFrame[i].paredFondoX >> KeyFrame[i].paredFondoY >> KeyFrame[i].paredFondoZ >> KeyFrame[i].paredFondoScale
+				 >> KeyFrame[i].paredIzqX >> KeyFrame[i].paredIzqY >> KeyFrame[i].paredIzqZ >> KeyFrame[i].paredIzqScale
+				 >> KeyFrame[i].sillaX >> KeyFrame[i].sillaY >> KeyFrame[i].sillaZ >> KeyFrame[i].sillaScale;
+		}
+		file.close();
+		resetElements();
+	}
+}
+
+void UpdateStandKeyframes() {
+	if (playAnimStand) {
+		if (i_curr_steps >= i_max_steps) {
+			playIndex++;
+			if (playIndex > FrameIndex - 2) {
+				playIndex = 0;
+				playAnimStand = false;
+			} else {
+				i_curr_steps = 0;
+				interpolation();
+			}
+		} else {
+			estDerX += KeyFrame[playIndex].incEstDerX; estDerY += KeyFrame[playIndex].incEstDerY; estDerZ += KeyFrame[playIndex].incEstDerZ; estDerScale += KeyFrame[playIndex].incEstDerScale;
+			estFondoX += KeyFrame[playIndex].incEstFondoX; estFondoY += KeyFrame[playIndex].incEstFondoY; estFondoZ += KeyFrame[playIndex].incEstFondoZ; estFondoScale += KeyFrame[playIndex].incEstFondoScale;
+			estIzqX += KeyFrame[playIndex].incEstIzqX; estIzqY += KeyFrame[playIndex].incEstIzqY; estIzqZ += KeyFrame[playIndex].incEstIzqZ; estIzqScale += KeyFrame[playIndex].incEstIzqScale;
+			mesaX += KeyFrame[playIndex].incMesaX; mesaY += KeyFrame[playIndex].incMesaY; mesaZ += KeyFrame[playIndex].incMesaZ; mesaScale += KeyFrame[playIndex].incMesaScale;
+			paredDerX += KeyFrame[playIndex].incParedDerX; paredDerY += KeyFrame[playIndex].incParedDerY; paredDerZ += KeyFrame[playIndex].incParedDerZ; paredDerScale += KeyFrame[playIndex].incParedDerScale;
+			paredFondoX += KeyFrame[playIndex].incParedFondoX; paredFondoY += KeyFrame[playIndex].incParedFondoY; paredFondoZ += KeyFrame[playIndex].incParedFondoZ; paredFondoScale += KeyFrame[playIndex].incParedFondoScale;
+			paredIzqX += KeyFrame[playIndex].incParedIzqX; paredIzqY += KeyFrame[playIndex].incParedIzqY; paredIzqZ += KeyFrame[playIndex].incParedIzqZ; paredIzqScale += KeyFrame[playIndex].incParedIzqScale;
+			sillaX += KeyFrame[playIndex].incSillaX; sillaY += KeyFrame[playIndex].incSillaY; sillaZ += KeyFrame[playIndex].incSillaZ; sillaScale += KeyFrame[playIndex].incSillaScale;
+			i_curr_steps++;
+		}
+	}
+}
+
+
 // DeltaTime
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
@@ -216,7 +336,17 @@ int main()
 
 	// Modelos principales
 	Model Puente((char*)"Models/Puente/final_puente.obj");
-	Model Stand((char*)"Models/Stands/stands.obj");
+
+	//Modelos de la estructura de los stands dividido por partes
+	Model ModEstructuraDer((char*)"Models/estructuraDer.obj");
+	Model ModEstructuraFondo((char*)"Models/estructuraFondo.obj");
+	Model ModEstructuraIzq((char*)"Models/estructuraIzq.obj");
+	Model ModMesa((char*)"Models/Mesa.obj");
+	Model ModParedDer((char*)"Models/paredDer.obj");
+	Model ModParedFondo((char*)"Models/paredFondo.obj");
+	Model ModParedIzq((char*)"Models/paredIzq.obj");
+	Model ModSilla((char*)"Models/Silla.obj");
+	
 	Model Camara((char*)"Models/Camara/camara.obj");
 	Model Lampara((char*)"Models/Lampara/LamparaFI.obj");
 	Model Pumagua((char*)"Models/Pumagua/Pumagua.obj");
@@ -231,6 +361,7 @@ int main()
 	Model pantorrillaIzq((char*)"Models/Persona/pantorrillaIzq.obj");
 	Model pantorrillaDer((char*)"Models/Persona/pantorrillaDer.obj");
 	
+	loadFromFile();
 	InitPeopleFlow();
 
 
@@ -358,7 +489,7 @@ int main()
 		// Events
 		glfwPollEvents();
 		DoMovement();
-		UpdateStandAnimation();
+		UpdateStandKeyframes();
 		UpdatePeopleFlow();
 
 		// Clear
@@ -539,19 +670,61 @@ int main()
 		// ===============================
 		for (int i = 0; i < NUM_STANDS; i++)
 		{
-			glm::vec3 finalScale = glm::vec3(0.5f, 0.5f, 0.5f) * standScale;
+			// Matriz Base
+			glm::mat4 baseModel = glm::mat4(1.0f);
+			baseModel = glm::translate(baseModel, standPositions[i]);
+			baseModel = glm::rotate(baseModel, glm::radians(standRotations[i]), glm::vec3(0.0f, 1.0f, 0.0f));
+			baseModel = glm::scale(baseModel, glm::vec3(0.5f, 0.5f, 0.5f)); 
 
-			DrawModel(
-				Stand,
-				lightingShader,
-				modelLoc,
-				standPositions[i],
-				finalScale,
-				0.0f,
-				standRotations[i],
-				0.0f
-			);
+			glm::mat4 partModel;
 
+			// 1. Estructura Derecha
+			partModel = glm::translate(baseModel, glm::vec3(estDerX, estDerY, estDerZ));
+			partModel = glm::scale(partModel, glm::vec3(estDerScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModEstructuraDer.Draw(lightingShader);
+
+			// 2. Estructura Fondo
+			partModel = glm::translate(baseModel, glm::vec3(estFondoX, estFondoY, estFondoZ));
+			partModel = glm::scale(partModel, glm::vec3(estFondoScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModEstructuraFondo.Draw(lightingShader);
+
+			// 3. Estructura Izquierda
+			partModel = glm::translate(baseModel, glm::vec3(estIzqX, estIzqY, estIzqZ));
+			partModel = glm::scale(partModel, glm::vec3(estIzqScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModEstructuraIzq.Draw(lightingShader);
+
+			// 4. Mesa
+			partModel = glm::translate(baseModel, glm::vec3(mesaX, mesaY, mesaZ));
+			partModel = glm::scale(partModel, glm::vec3(mesaScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModMesa.Draw(lightingShader);
+
+			// 5. Pared Derecha
+			partModel = glm::translate(baseModel, glm::vec3(paredDerX, paredDerY, paredDerZ));
+			partModel = glm::scale(partModel, glm::vec3(paredDerScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModParedDer.Draw(lightingShader);
+
+			// 6. Pared Fondo
+			partModel = glm::translate(baseModel, glm::vec3(paredFondoX, paredFondoY, paredFondoZ));
+			partModel = glm::scale(partModel, glm::vec3(paredFondoScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModParedFondo.Draw(lightingShader);
+
+			// 7. Pared Izquierda
+			partModel = glm::translate(baseModel, glm::vec3(paredIzqX, paredIzqY, paredIzqZ));
+			partModel = glm::scale(partModel, glm::vec3(paredIzqScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModParedIzq.Draw(lightingShader);
+
+			// 8. Silla
+			partModel = glm::translate(baseModel, glm::vec3(sillaX, sillaY, sillaZ));
+			partModel = glm::scale(partModel, glm::vec3(sillaScale));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(partModel));
+			ModSilla.Draw(lightingShader);
 		}
 		// ===============================
 		// DIBUJAR FLUJO INTELIGENTE DE PERSONAS
@@ -660,10 +833,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		}
 	}
 
-	// Tecla 1: activa o desactiva la animaci�n de los stands
+	// Tecla 1: activa la animación de los stands
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
-		animStands = !animStands;
+		if (!playAnimStand && (FrameIndex > 1))
+		{
+			resetElements();
+			interpolation();
+			playAnimStand = true;
+			playIndex = 0;
+			i_curr_steps = 0;
+		}
 	}
 	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
 	{
@@ -671,50 +851,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	}
 }
 
-// ===============================
-// ANIMACI�N DE STANDS CON KEYFRAMES
-// ===============================
-void UpdateStandAnimation()
-{
-	if (animStands)
-	{
-		standAnimTime += deltaTime;
 
-		if (standAnimTime > 5.0f)
-			standAnimTime = 5.0f;
-	}
-	else
-	{
-		standAnimTime -= deltaTime;
-
-		if (standAnimTime < 0.0f)
-			standAnimTime = 0.0f;
-	}
-
-	// KeyFrames:
-	// KF0 = 0.0s -> Puente vac�o, scale = 0.0
-	// KF1 = 1.0s -> Aparici�n inicial, scale = 0.3
-	// KF2 = 2.0s -> Crecimiento, scale = 0.6
-	// KF3 = 3.5s -> Posicionamiento, scale = 0.9
-	// KF4 = 5.0s -> Estado final, scale = 1.0
-
-	if (standAnimTime < 1.0f)
-	{
-		standScale = glm::mix(0.0f, 0.3f, standAnimTime / 1.0f);
-	}
-	else if (standAnimTime < 2.0f)
-	{
-		standScale = glm::mix(0.3f, 0.6f, (standAnimTime - 1.0f) / 1.0f);
-	}
-	else if (standAnimTime < 3.5f)
-	{
-		standScale = glm::mix(0.6f, 0.9f, (standAnimTime - 2.0f) / 1.5f);
-	}
-	else
-	{
-		standScale = glm::mix(0.9f, 1.0f, (standAnimTime - 3.5f) / 1.5f);
-	}
-}
 
 // ===============================
 // DIBUJAR MODELO DE STAND
