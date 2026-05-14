@@ -30,6 +30,9 @@
 #include <string>
 #include <vector>
 #include "Texture.h"
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 
 // Function prototypes
@@ -40,6 +43,30 @@ void UpdateStandAnimation();
 void DrawModel(Model& modelObject, Shader shader, GLint modelLoc, glm::vec3 pos, glm::vec3 scale, float rotX, float rotY, float rotZ);
 void InitPeopleFlow();
 void UpdatePeopleFlow();
+
+// ===============================
+// ANIMACIÓN DE FLECHAS
+// ===============================
+void SaveArrowFrame();
+void ResetArrowAnimation();
+void InterpolateArrow();
+void UpdateArrowAnimation();
+void SaveArrowAnimationJSON(const char* filename);
+void LoadArrowAnimationJSON(const char* filename);
+
+void DrawArrowModel(
+	Model& arrowModel,
+	Shader shader,
+	GLint modelLoc,
+	glm::vec3 pos,
+	glm::vec3 scale,
+	float rotX,
+	float rotY,
+	float brightness
+);
+
+
+
 
 void DrawPerson(
 	Model& torso,
@@ -152,6 +179,45 @@ float peopleLaneX[NUM_PEOPLE];
 float peopleWalkTime[NUM_PEOPLE];
 float peopleScale[NUM_PEOPLE];
 int peopleModelType[NUM_PEOPLE]; // 0 para obj y 1 para fbx 
+
+
+// ===============================
+// ANIMACIÓN DE FLECHAS CON KEYFRAMES
+// ===============================
+
+bool animArrow = false;
+bool playArrow = false;
+
+#define MAX_ARROW_FRAMES 30
+
+int arrowFrameIndex = 0;
+int arrowPlayIndex = 0;
+int arrowCurrSteps = 0;
+int arrowMaxSteps = 120;
+
+// Transformaciones actuales de la flecha.
+// Solo se anima Z, escala, rotación X y brillo.
+glm::vec3 arrowPos = glm::vec3(1.0f, 0.65f, -14.0f);
+glm::vec3 arrowScale = glm::vec3(0.5f, 0.5f, 0.5f);
+float arrowRotX = -90.0f;
+float arrowBrightness = 1.0f;
+
+typedef struct _arrowFrame
+{
+	glm::vec3 pos;
+	glm::vec3 scale;
+	float rotX;
+	float brightness;
+
+	glm::vec3 posInc;
+	glm::vec3 scaleInc;
+	float rotXInc;
+	float brightnessInc;
+} ARROW_FRAME;
+
+ARROW_FRAME ArrowKeyFrame[MAX_ARROW_FRAMES];
+
+
 
 float vertices[] = {
 	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -411,6 +477,7 @@ int main()
 	Model piernaDer((char*)"Models/Persona/piernaDer.obj");
 	Model pantorrillaIzq((char*)"Models/Persona/pantorrillaIzq.obj");
 	Model pantorrillaDer((char*)"Models/Persona/pantorrillaDer.obj");
+	Model Arrow((char*)"Models/Arrow/Arrow5.obj");
 	
 	loadFromFile();
 	InitPeopleFlow();
@@ -544,6 +611,7 @@ int main()
 		DoMovement();
 		UpdateStandKeyframes();
 		UpdatePeopleFlow();
+		UpdateArrowAnimation();
 
 		UpdateStandProximity();
 
@@ -811,6 +879,49 @@ int main()
 				);
 			}
 		}
+
+
+		// ===============================
+// DIBUJAR FLECHAS DE SEÑALIZACIÓN
+// ===============================
+if (animArrow)
+{
+	// Flecha derecha: lado derecho del pasillo
+	glm::vec3 rightArrowPos = glm::vec3(
+		1.2f,       // X
+		-0.96f,     // Y, altura del piso
+		arrowPos.z  // Z animada
+	);
+
+	DrawArrowModel(
+		Arrow,
+		lightingShader,
+		modelLoc,
+		rightArrowPos,
+		arrowScale,
+		arrowRotX,
+		-90.0f,
+		arrowBrightness
+	);
+
+	// Flecha izquierda: lado izquierdo del pasillo, sentido contrario
+	glm::vec3 leftArrowPos = glm::vec3(
+		-1.2f,       // X
+		-0.96f,      // Y, altura del piso
+		-arrowPos.z  // Z contraria
+	);
+
+	DrawArrowModel(
+		Arrow,
+		lightingShader,
+		modelLoc,
+		leftArrowPos,
+		arrowScale,
+		arrowRotX,
+		90.0f,
+		arrowBrightness
+	);
+}
 		
 
 		//Draw skybox last
@@ -866,6 +977,70 @@ void DoMovement()
 	{
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 	}
+	// ===============================
+// CONTROLES MANUALES DE FLECHAS
+// ===============================
+
+// Mover flechas en Z
+if (keys[GLFW_KEY_I])
+{
+	arrowPos.z += 1.5f * deltaTime;
+}
+
+if (keys[GLFW_KEY_K])
+{
+	arrowPos.z -= 1.5f * deltaTime;
+}
+
+// Rotar flechas en X
+if (keys[GLFW_KEY_Q])
+{
+	arrowRotX += 80.0f * deltaTime;
+}
+
+if (keys[GLFW_KEY_E])
+{
+	arrowRotX -= 80.0f * deltaTime;
+}
+
+// Aumentar escala
+if (keys[GLFW_KEY_Z])
+{
+	arrowScale += glm::vec3(0.8f * deltaTime);
+}
+
+// Disminuir escala
+if (keys[GLFW_KEY_X])
+{
+	arrowScale -= glm::vec3(0.8f * deltaTime);
+
+	if (arrowScale.x < 0.05f)
+	{
+		arrowScale = glm::vec3(0.05f);
+	}
+}
+
+// Aumentar brillo
+if (keys[GLFW_KEY_C])
+{
+	arrowBrightness += 1.0f * deltaTime;
+
+	if (arrowBrightness > 3.0f)
+	{
+		arrowBrightness = 3.0f;
+	}
+}
+
+// Disminuir brillo
+if (keys[GLFW_KEY_V])
+{
+	arrowBrightness -= 1.0f * deltaTime;
+
+	if (arrowBrightness < 0.2f)
+	{
+		arrowBrightness = 0.2f;
+	}
+}
 }
 
 // ===============================
@@ -906,6 +1081,78 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	{
 		animPeople = !animPeople;
 	}
+	// Tecla 4: mostrar u ocultar flechas
+if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+{
+	animArrow = !animArrow;
+}
+
+// Tecla P: guardar keyframe actual
+if (key == GLFW_KEY_P && action == GLFW_PRESS)
+{
+	SaveArrowFrame();
+}
+
+// F7: guardar animación en JSON
+if (key == GLFW_KEY_F7 && action == GLFW_PRESS)
+{
+	SaveArrowAnimationJSON("flecha_animacion.json");
+}
+
+// F8: cargar animación desde JSON
+if (key == GLFW_KEY_F8 && action == GLFW_PRESS)
+{
+	LoadArrowAnimationJSON("flecha_animacion.json");
+}
+
+// L: reproducir/detener animación ya cargada
+if (key == GLFW_KEY_L && action == GLFW_PRESS)
+{
+	if (!playArrow && arrowFrameIndex > 1)
+	{
+		ResetArrowAnimation();
+
+		arrowPlayIndex = 0;
+		arrowCurrSteps = 0;
+
+		InterpolateArrow();
+
+		animArrow = true;
+		playArrow = true;
+
+		printf("Reproduciendo animacion de flecha\n");
+	}
+	else
+	{
+		playArrow = false;
+		printf("Animacion de flecha detenida\n");
+	}
+}
+
+// Tecla 5: cargar JSON y reproducir automáticamente
+if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+{
+	LoadArrowAnimationJSON("flecha_animacion.json");
+
+	if (arrowFrameIndex > 1)
+	{
+		ResetArrowAnimation();
+
+		arrowPlayIndex = 0;
+		arrowCurrSteps = 0;
+
+		InterpolateArrow();
+
+		animArrow = true;
+		playArrow = true;
+
+		printf("Animacion de flecha cargada y reproducida desde JSON\n");
+	}
+	else
+	{
+		printf("No hay suficientes keyframes para reproducir la animacion\n");
+	}
+}
 }
 
 
@@ -1135,4 +1382,216 @@ void DrawPerson(
 	model = glm::rotate(model, glm::radians(angPantorrillaDer), glm::vec3(1.0f, 0.0f, 0.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	pantorrillaDer.Draw(shader);
+}
+
+void SaveArrowFrame()
+{
+	if (arrowFrameIndex >= MAX_ARROW_FRAMES)
+	{
+		printf("Ya no hay espacio para mas keyframes de flecha.\n");
+		return;
+	}
+
+	ArrowKeyFrame[arrowFrameIndex].pos = arrowPos;
+	ArrowKeyFrame[arrowFrameIndex].scale = arrowScale;
+	ArrowKeyFrame[arrowFrameIndex].rotX = arrowRotX;
+	ArrowKeyFrame[arrowFrameIndex].brightness = arrowBrightness;
+
+	printf("\nKeyframe flecha guardado: %d\n", arrowFrameIndex);
+	printf("Posicion: x=%.2f y=%.2f z=%.2f\n", arrowPos.x, arrowPos.y, arrowPos.z);
+	printf("Escala: x=%.2f y=%.2f z=%.2f\n", arrowScale.x, arrowScale.y, arrowScale.z);
+	printf("RotX: %.2f\n", arrowRotX);
+	printf("Brillo: %.2f\n", arrowBrightness);
+
+	arrowFrameIndex++;
+}
+
+void ResetArrowAnimation()
+{
+	if (arrowFrameIndex <= 0)
+		return;
+
+	arrowPos = ArrowKeyFrame[0].pos;
+	arrowScale = ArrowKeyFrame[0].scale;
+	arrowRotX = ArrowKeyFrame[0].rotX;
+	arrowBrightness = ArrowKeyFrame[0].brightness;
+}
+
+void InterpolateArrow()
+{
+	if (arrowPlayIndex >= arrowFrameIndex - 1)
+		return;
+
+	ArrowKeyFrame[arrowPlayIndex].posInc =
+		(ArrowKeyFrame[arrowPlayIndex + 1].pos - ArrowKeyFrame[arrowPlayIndex].pos) / (float)arrowMaxSteps;
+
+	ArrowKeyFrame[arrowPlayIndex].scaleInc =
+		(ArrowKeyFrame[arrowPlayIndex + 1].scale - ArrowKeyFrame[arrowPlayIndex].scale) / (float)arrowMaxSteps;
+
+	ArrowKeyFrame[arrowPlayIndex].rotXInc =
+		(ArrowKeyFrame[arrowPlayIndex + 1].rotX - ArrowKeyFrame[arrowPlayIndex].rotX) / (float)arrowMaxSteps;
+
+	ArrowKeyFrame[arrowPlayIndex].brightnessInc =
+		(ArrowKeyFrame[arrowPlayIndex + 1].brightness - ArrowKeyFrame[arrowPlayIndex].brightness) / (float)arrowMaxSteps;
+}
+
+void UpdateArrowAnimation()
+{
+	if (!playArrow)
+		return;
+
+	if (arrowCurrSteps >= arrowMaxSteps)
+	{
+		arrowPlayIndex++;
+
+		if (arrowPlayIndex > arrowFrameIndex - 2)
+		{
+			printf("Termino animacion de flecha\n");
+			playArrow = false;
+			arrowPlayIndex = 0;
+			arrowCurrSteps = 0;
+			return;
+		}
+
+		arrowCurrSteps = 0;
+		InterpolateArrow();
+	}
+	else
+	{
+		arrowPos += ArrowKeyFrame[arrowPlayIndex].posInc;
+		arrowScale += ArrowKeyFrame[arrowPlayIndex].scaleInc;
+		arrowRotX += ArrowKeyFrame[arrowPlayIndex].rotXInc;
+		arrowBrightness += ArrowKeyFrame[arrowPlayIndex].brightnessInc;
+
+		arrowCurrSteps++;
+	}
+}
+
+void SaveArrowAnimationJSON(const char* filename)
+{
+	if (arrowFrameIndex <= 0)
+	{
+		printf("No hay keyframes de flecha para guardar.\n");
+		return;
+	}
+
+	json animation;
+
+	animation["totalFrames"] = arrowFrameIndex;
+	animation["maxSteps"] = arrowMaxSteps;
+	animation["keyframes"] = json::array();
+
+	for (int i = 0; i < arrowFrameIndex; i++)
+	{
+		json frame;
+
+		frame["pos"] = {
+			ArrowKeyFrame[i].pos.x,
+			ArrowKeyFrame[i].pos.y,
+			ArrowKeyFrame[i].pos.z
+		};
+
+		frame["scale"] = {
+			ArrowKeyFrame[i].scale.x,
+			ArrowKeyFrame[i].scale.y,
+			ArrowKeyFrame[i].scale.z
+		};
+
+		frame["rotX"] = ArrowKeyFrame[i].rotX;
+		frame["brightness"] = ArrowKeyFrame[i].brightness;
+
+		animation["keyframes"].push_back(frame);
+	}
+
+	std::ofstream file(filename);
+
+	if (!file.is_open())
+	{
+		printf("No se pudo guardar el archivo JSON de flecha.\n");
+		return;
+	}
+
+	file << animation.dump(4);
+	file.close();
+
+	printf("Animacion de flecha guardada en %s\n", filename);
+}
+
+void LoadArrowAnimationJSON(const char* filename)
+{
+	std::ifstream file(filename);
+
+	if (!file.is_open())
+	{
+		printf("No se pudo abrir %s\n", filename);
+		return;
+	}
+
+	json animation;
+	file >> animation;
+	file.close();
+
+	arrowFrameIndex = animation["totalFrames"];
+	arrowMaxSteps = animation["maxSteps"];
+
+	if (arrowFrameIndex > MAX_ARROW_FRAMES)
+	{
+		printf("El JSON tiene demasiados frames. Solo se cargaran %d\n", MAX_ARROW_FRAMES);
+		arrowFrameIndex = MAX_ARROW_FRAMES;
+	}
+
+	for (int i = 0; i < arrowFrameIndex; i++)
+	{
+		ArrowKeyFrame[i].pos = glm::vec3(
+			animation["keyframes"][i]["pos"][0],
+			animation["keyframes"][i]["pos"][1],
+			animation["keyframes"][i]["pos"][2]
+		);
+
+		ArrowKeyFrame[i].scale = glm::vec3(
+			animation["keyframes"][i]["scale"][0],
+			animation["keyframes"][i]["scale"][1],
+			animation["keyframes"][i]["scale"][2]
+		);
+
+		ArrowKeyFrame[i].rotX = animation["keyframes"][i]["rotX"];
+		ArrowKeyFrame[i].brightness = animation["keyframes"][i]["brightness"];
+	}
+
+	ResetArrowAnimation();
+
+	printf("Animacion de flecha cargada desde %s\n", filename);
+	printf("Frames cargados: %d\n", arrowFrameIndex);
+}
+
+void DrawArrowModel(
+	Model& arrowModel,
+	Shader shader,
+	GLint modelLoc,
+	glm::vec3 pos,
+	glm::vec3 scale,
+	float rotX,
+	float rotY,
+	float brightness
+)
+{
+	glm::mat4 model = glm::mat4(1.0f);
+
+	model = glm::translate(model, pos);
+
+	// Primero orientamos hacia el largo del puente
+	model = glm::rotate(model, glm::radians(rotY), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	// Después acostamos la flecha sobre el piso
+	model = glm::rotate(model, glm::radians(rotX), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	model = glm::scale(model, scale);
+
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+	glUniform1f(glGetUniformLocation(shader.Program, "brightness"), brightness);
+
+	arrowModel.Draw(shader);
+
+	glUniform1f(glGetUniformLocation(shader.Program, "brightness"), 1.0f);
 }
