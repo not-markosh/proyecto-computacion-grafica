@@ -41,7 +41,7 @@
     <None Include="Shader\SkyBox.vs" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="Stands.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
